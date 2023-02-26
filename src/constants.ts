@@ -7,9 +7,15 @@ export const PLAYLIST_TRACKS_FILE_PATH = path.join(
   __dirname,
   "../data/playlistTracks.json"
 );
+
 export const SAVED_TRACKS_FILE_PATH = path.join(
   __dirname,
   "../data/savedTracks.json"
+);
+
+export const RECONSTRUCTED_TRACKS_FILE_PATH = path.join(
+  __dirname,
+  "../data/reconstructedTracks.json"
 );
 
 export const {

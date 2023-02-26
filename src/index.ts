@@ -3,6 +3,8 @@ import { writeJSON, exists, readJSON } from "fs-extra";
 import { getApi } from "./getApi";
 import { getAllPlaylistTracks } from "./getAllPlaylistTracks";
 import { getAllSavedTracks } from "./getAllSavedTracks";
+import { reconstruct } from "./reconstruct";
+import { push } from "./push";
 import { minifyPlaylistTracks, minifySavedTracks } from "./minify";
 import {
   DELAY_MS,
@@ -16,8 +18,8 @@ import {
   AUTHORIZATION_CODE,
   SCOPES,
   REDIRECT_URI,
+  RECONSTRUCTED_TRACKS_FILE_PATH,
 } from "./constants";
-import type { Track } from "./types";
 
 const main = async () => {
   const api = await getApi({
@@ -37,14 +39,14 @@ const main = async () => {
       limit: LIMIT,
     });
 
-    await writeJSON(PLAYLIST_TRACKS_FILE_PATH, minifyPlaylistTracks(allPlaylistTracks), {
-      spaces: 2,
-    });
+    await writeJSON(
+      PLAYLIST_TRACKS_FILE_PATH,
+      minifyPlaylistTracks(allPlaylistTracks),
+      {
+        spaces: 2,
+      }
+    );
   }
-
-  const playlistTracks: Track[] = await readJSON(PLAYLIST_TRACKS_FILE_PATH);
-
-  console.log("playlistTracks:", playlistTracks.length);
 
   if (!(await exists(SAVED_TRACKS_FILE_PATH))) {
     const allSavedTracks = await getAllSavedTracks({
@@ -58,9 +60,21 @@ const main = async () => {
     });
   }
 
-  const savedTracks: Track[] = await readJSON(SAVED_TRACKS_FILE_PATH);
+  if (!(await exists(RECONSTRUCTED_TRACKS_FILE_PATH))) {
+    const reconstructed = await reconstruct({
+      playlistTracks: await readJSON(PLAYLIST_TRACKS_FILE_PATH),
+      savedTracks: await readJSON(SAVED_TRACKS_FILE_PATH),
+    });
 
-  console.log("savedTracks:", savedTracks.length);
+    await writeJSON(RECONSTRUCTED_TRACKS_FILE_PATH, reconstructed, {
+      spaces: 2,
+    });
+  }
+
+  await push({
+    api,
+    tracks: await readJSON(RECONSTRUCTED_TRACKS_FILE_PATH),
+  });
 };
 
 main();
